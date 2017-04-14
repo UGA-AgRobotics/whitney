@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from skimage import io, filters, morphology, exposure, color, feature, segmentation, graph, draw
+from skimage import io, filters, morphology, exposure, color, feature, segmentation, graph, draw, measure
 from skimage.feature import blob_doh
 from scipy import ndimage as ndi
 import numpy as np
@@ -25,7 +25,6 @@ def test_thresh(img):
 if __name__ == '__main__':
 
     image = io.imread("../img/cotton1.png")
-
     image_gray = color.rgb2gray(image)
     image_gray = exposure.equalize_adapthist(image_gray)
     out = filters.rank.tophat(image_gray, morphology.disk(10))
@@ -39,13 +38,18 @@ if __name__ == '__main__':
                            subplot_kw={'adjustable': 'box-forced'})
 
     ax.imshow(image, interpolation='nearest', cmap='gray')
-    for blob in blobs_doh:
+    labels = np.zeros(image_gray.shape, dtype=np.int)
+    for index, blob in enumerate(blobs_doh):
         y, x, r = blob
         c = plt.Circle((x, y), r, color='red', linewidth=2, fill=False)
         rr, cc = draw.circle(y, x, r, shape=image.shape)
-
+        ax.text(x, y, index, color='white',
+                bbox={'facecolor': 'black', 'alpha': 0.5, 'pad': 1})
+        labels[rr, cc] = index
         ax.add_patch(c)
-
+    props = measure.regionprops(labels, image_gray)
+    for prop in props:
+        print(prop.mean_intensity)
     ax.text(1, 1, "Bolls: "+str(len(blobs_doh)), color='white',
             bbox={'facecolor': 'black', 'alpha': 1, 'pad': 2})
     ax.set_axis_off()
