@@ -26,35 +26,49 @@ def test_thresh(img):
 if __name__ == '__main__':
 
     image = io.imread("../img/cotton1.jpg")
+    # convert to gray scale
     image_gray = color.rgb2gray(image)
+    # run bilateral filter to smooth image but keep edges
     bilat_img = filters.rank.mean_bilateral(image_gray, morphology.disk(30), s0=10, s1=10)
+    # equalize the histogram to boost contrast
     eq = exposure.equalize_adapthist(bilat_img)
+    # compute top hat to boost details
     out = filters.rank.tophat(eq, morphology.disk(10))
+    # close to fill in holes and close gaps
     close = morphology.closing(out)
+    # open to remove small stuff
     opening = morphology.opening(close)
+    # invert the image as we are looking for "white"
     opening = 255 - opening
-
+    # blobs are found using the Determinant of Hessian method
     blobs_doh = blob_doh(opening, min_sigma=10, max_sigma=100, num_sigma=10, threshold=.006)
 
     fig, ax = plt.subplots(1, 1, sharex=True, sharey=True,
                            subplot_kw={'adjustable': 'box-forced'})
 
     ax.imshow(image, interpolation='nearest', cmap='gray')
+    # create a matrix to store labels for each region
     labels = np.zeros(image_gray.shape, dtype=np.int)
     thresholds = []
     for index, blob in enumerate(blobs_doh, start=1):
         y, x, r = blob
+        # get the bounding matrix of the blob
         rr, cc = draw.circle(y, x, r, shape=image.shape)
+        # label the pixels in the blob
         labels[rr, cc] = index
+        # find the otsu threshold of the blobs region and add it to a list of thresholds
         thresholds.append(filters.threshold_otsu(bilat_img[rr, cc]))
 
+    # fine the 65th percentile of all the otsu thresholds, acting as a iterative threshold
     threshold = np.percentile(thresholds, 65)
 
     count = 0
     for index, blob in enumerate(blobs_doh, start=1):
         y, x, r = blob
+        # ignore anything less thant the threshold
         if thresholds[index-1] <= threshold:
             continue
+        # keep count of all bolls we care about
         count = count + 1
         c = plt.Circle((x, y), r, color='red', linewidth=2, fill=False)
         ax.text(x, y, index, color='white',
