@@ -43,13 +43,14 @@ if __name__ == '__main__':
         y, x, r = blob
         c = plt.Circle((x, y), r, color='red', linewidth=2, fill=False)
         rr, cc = draw.circle(y, x, r, shape=image.shape)
-        ax.text(x, y, index, color='white',
+        ax.text(x, y, index+1, color='white',
                 bbox={'facecolor': 'black', 'alpha': 0.5, 'pad': 1})
-        labels[rr, cc] = index
+        print(index, filters.rank.mean(image_gray[rr,cc]))
+        labels[rr, cc] = index+1
         ax.add_patch(c)
     props = measure.regionprops(labels, image_gray)
     for prop in props:
-        print(prop.mean_intensity)
+        print(prop.label, prop.mean_intensity)
     ax.text(1, 1, "Bolls: "+str(len(blobs_doh)), color='white',
             bbox={'facecolor': 'black', 'alpha': 1, 'pad': 2})
     ax.set_axis_off()
