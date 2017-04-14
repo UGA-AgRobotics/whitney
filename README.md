@@ -10,4 +10,4 @@ I don't really know how it will work. I am still creating it and trying to figur
 See screen shots for my best results. 
 
 ## Screen Shots
-![figure1](/readme-img/figure_1.png)
+![figure1](/readme-img/figure_2.png)

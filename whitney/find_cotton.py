@@ -34,12 +34,12 @@ if __name__ == '__main__':
     opening = morphology.opening(close)
     opening = 255 - opening
 
-    blobs_doh = blob_doh(opening, min_sigma=15, max_sigma=150, num_sigma=20, threshold=.006)
+    blobs_doh = blob_doh(opening, min_sigma=10, max_sigma=100, num_sigma=10, threshold=.006)
 
     fig, ax = plt.subplots(1, 1, sharex=True, sharey=True,
                            subplot_kw={'adjustable': 'box-forced'})
 
-    ax.imshow(bilat_img, interpolation='nearest', cmap='gray')
+    ax.imshow(image, interpolation='nearest', cmap='gray')
     labels = np.zeros(image_gray.shape, dtype=np.int)
     thresholds = []
     for index, blob in enumerate(blobs_doh, start=1):
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         labels[rr, cc] = index
         thresholds.append(filters.threshold_otsu(bilat_img[rr, cc]))
 
-    threshold = np.percentile(thresholds, 60)
+    threshold = np.percentile(thresholds, 65)
 
     count = 0
     for index, blob in enumerate(blobs_doh, start=1):
