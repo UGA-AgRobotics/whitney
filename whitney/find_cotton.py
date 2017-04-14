@@ -5,6 +5,7 @@ from scipy import ndimage as ndi
 import numpy as np
 
 
+
 def test_lines(img):
     gauss = filters.gaussian(img, sigma=2)
     equalize = exposure.equalize_adapthist(gauss)
@@ -24,34 +25,43 @@ def test_thresh(img):
 
 if __name__ == '__main__':
 
-    image = io.imread("../img/cotton1.png")
+    image = io.imread("../img/cotton1.jpg")
     image_gray = color.rgb2gray(image)
-    image_gray = exposure.equalize_adapthist(image_gray)
-    out = filters.rank.tophat(image_gray, morphology.disk(10))
+    eq = exposure.equalize_adapthist(image_gray)
+    out = filters.rank.tophat(eq, morphology.disk(10))
     close = morphology.closing(out)
     opening = morphology.opening(close)
     bilat_img = filters.rank.mean_bilateral(opening, morphology.disk(30), s0=10, s1=10)
+    bilat_img = 255 - bilat_img
 
-    blobs_doh = blob_doh(bilat_img, min_sigma=20, max_sigma=50, num_sigma=20, threshold=.006)
+    blobs_doh = blob_doh(bilat_img, min_sigma=20, max_sigma=150, num_sigma=20, threshold=.005)
 
     fig, ax = plt.subplots(1, 1, sharex=True, sharey=True,
                            subplot_kw={'adjustable': 'box-forced'})
 
     ax.imshow(image, interpolation='nearest', cmap='gray')
     labels = np.zeros(image_gray.shape, dtype=np.int)
-    for index, blob in enumerate(blobs_doh):
+    thresholds = []
+    for index, blob in enumerate(blobs_doh, start=1):
         y, x, r = blob
-        c = plt.Circle((x, y), r, color='red', linewidth=2, fill=False)
         rr, cc = draw.circle(y, x, r, shape=image.shape)
-        ax.text(x, y, index+1, color='white',
+        labels[rr, cc] = index
+        thresholds.append(filters.threshold_otsu(image_gray[rr, cc]))
+
+    threshold = np.mean(thresholds)
+
+    count = 0
+    for index, blob in enumerate(blobs_doh, start=1):
+        y, x, r = blob
+        if thresholds[index-1] <= threshold:
+            continue
+        count = count + 1
+        c = plt.Circle((x, y), r, color='red', linewidth=2, fill=False)
+        ax.text(x, y, index, color='white',
                 bbox={'facecolor': 'black', 'alpha': 0.5, 'pad': 1})
-        print(index, filters.rank.mean(image_gray[rr,cc]))
-        labels[rr, cc] = index+1
         ax.add_patch(c)
-    props = measure.regionprops(labels, image_gray)
-    for prop in props:
-        print(prop.label, prop.mean_intensity)
-    ax.text(1, 1, "Bolls: "+str(len(blobs_doh)), color='white',
+
+    ax.text(1, 1, "Bolls: "+str(count), color='white',
             bbox={'facecolor': 'black', 'alpha': 1, 'pad': 2})
     ax.set_axis_off()
 
