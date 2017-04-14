@@ -27,28 +27,28 @@ if __name__ == '__main__':
 
     image = io.imread("../img/cotton1.jpg")
     image_gray = color.rgb2gray(image)
-    eq = exposure.equalize_adapthist(image_gray)
+    bilat_img = filters.rank.mean_bilateral(image_gray, morphology.disk(30), s0=10, s1=10)
+    eq = exposure.equalize_adapthist(bilat_img)
     out = filters.rank.tophat(eq, morphology.disk(10))
     close = morphology.closing(out)
     opening = morphology.opening(close)
-    bilat_img = filters.rank.mean_bilateral(opening, morphology.disk(30), s0=10, s1=10)
-    bilat_img = 255 - bilat_img
+    opening = 255 - opening
 
-    blobs_doh = blob_doh(bilat_img, min_sigma=20, max_sigma=150, num_sigma=20, threshold=.005)
+    blobs_doh = blob_doh(opening, min_sigma=15, max_sigma=150, num_sigma=20, threshold=.006)
 
     fig, ax = plt.subplots(1, 1, sharex=True, sharey=True,
                            subplot_kw={'adjustable': 'box-forced'})
 
-    ax.imshow(image, interpolation='nearest', cmap='gray')
+    ax.imshow(bilat_img, interpolation='nearest', cmap='gray')
     labels = np.zeros(image_gray.shape, dtype=np.int)
     thresholds = []
     for index, blob in enumerate(blobs_doh, start=1):
         y, x, r = blob
         rr, cc = draw.circle(y, x, r, shape=image.shape)
         labels[rr, cc] = index
-        thresholds.append(filters.threshold_otsu(image_gray[rr, cc]))
+        thresholds.append(filters.threshold_otsu(bilat_img[rr, cc]))
 
-    threshold = np.mean(thresholds)
+    threshold = np.percentile(thresholds, 60)
 
     count = 0
     for index, blob in enumerate(blobs_doh, start=1):
